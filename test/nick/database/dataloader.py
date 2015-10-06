@@ -26,7 +26,7 @@ class DataLoader(object):
         If mode == 'online', we will set the local ephys path and behav path using the experimenter and animalName.
         If mode == 'offline', we will assume that paths relative to settings.EPHYS_PATH and settings.BEHAVIOR_PATH are passed
 
-        Args: 
+        Args:
             mode (str): Must be either 'online' or 'offline'
             animalName (str): Name of the animal
             date (str): Date of the experiment in the format "2015-06-24"
@@ -113,7 +113,7 @@ class DataLoader(object):
 
         return eventOnsetTimes
 
-    def get_session_spikes(self, session, tetrode, cluster=None):
+    def get_session_spikes(self, session, electrode, cluster=None):
         '''
         Get the spike data for one session, one tetrode.
 
@@ -124,7 +124,7 @@ class DataLoader(object):
         Args:
             session (str or int): If a string, then must be either the full name of the ephys file (e.g. '2015-06-24_12-24-03') or just the timestamp portion of the file ('12-24-03'), in which case self.date will be used to construct the full file name. If an int, then the files that were recorded on self.date will be sorted, and the value provided will be used to index the sorted list. Therefore, -1 will return the session with the latest timestamp on the recording day.
 
-            tetrode (int): The tetrode number to retrieve
+            electrode (str): The name of the electrode to load (Tetrode1, Singleelectrode1, etc.)
 
             convert_to_seconds (bool): Whether or not to divide by the value stored in self.SAMPLING_RATE before returning spike timestamps
 
@@ -133,10 +133,10 @@ class DataLoader(object):
         '''
         if self.mode=='online':
             ephysSession = self.get_session_filename(session)
-            spikeFilename = os.path.join(self.onlineEphysPath, ephysSession, 'Tetrode{}.spikes'.format(tetrode))
+            spikeFilename = os.path.join(self.onlineEphysPath, ephysSession, '{}.spikes'.format(electrode))
 
         elif self.mode=='offline': #The session should already be relative to the mouse
-            spikeFilename = os.path.join(settings.EPHYS_PATH, session, 'Tetrode{}.spikes'.format(tetrode))
+            spikeFilename = os.path.join(settings.EPHYS_PATH, session, '{}.spikes'.format(electrode))
 
         spikeData = loadopenephys.DataSpikes(spikeFilename)
 
@@ -168,7 +168,7 @@ class DataLoader(object):
         if cluster:
             spikeData.samples=spikeData.samples[spikeData.clusters==cluster]
             spikeData.timestamps=spikeData.timestamps[spikeData.clusters==cluster]
-            
+
         return spikeData
 
     def get_session_behavior(self, behavFileName):
@@ -195,7 +195,7 @@ class DataLoader(object):
 
     def get_cluster_data(self, clusterObj, sessionType=None):
         '''
-        A method that will take a cluster object and return data objects. 
+        A method that will take a cluster object and return data objects.
         '''
         ephysFn, behavFn = clusterObj.get_data_filenames(sessionType)
 
@@ -208,5 +208,3 @@ class DataLoader(object):
             behavData = self.get_session_behavior(behavFn)
 
         return spikeData, eventData, behavData
-
-        

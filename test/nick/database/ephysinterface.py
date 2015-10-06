@@ -21,7 +21,7 @@ class EphysInterface(object):
                  date,
                  experimenter,
                  defaultParadigm=None,
-                 defaultTetrodes=[3, 4, 5, 6],
+                 defaultElectrodes=['Electrode3', 'Electrode4', 'Electrode5', 'Electrode6'],
                  serverUser='jarauser',
                  serverName='jarahub',
                  serverBehavPathBase='/data/behavior'
@@ -31,7 +31,7 @@ class EphysInterface(object):
         self.date = date
         self.experimenter = experimenter
         self.defaultParadigm = defaultParadigm
-        self.defaultTetrodes=defaultTetrodes
+        self.defaultElectrodes=defaultElectrodes
 
         self.loader = dataloader.DataLoader('online', animalName, date, experimenter, defaultParadigm)
 
@@ -49,10 +49,10 @@ class EphysInterface(object):
         print ' '.join(transferCommand)
         subprocess.call(transferCommand)
 
-    def plot_session_raster(self, session, tetrode, cluster = None, sortArray = [], replace=0, ms=4):
+    def plot_session_raster(self, session, electrode, cluster = None, sortArray = [], replace=0, ms=4):
 
         plotTitle = self.loader.get_session_filename(session)
-        spikeData= self.loader.get_session_spikes(session, tetrode)
+        spikeData= self.loader.get_session_spikes(session, electrode)
         eventData = self.loader.get_session_events(session)
         eventOnsetTimes = self.loader.get_event_onset_times(eventData)
         spikeTimestamps=spikeData.timestamps
@@ -70,12 +70,12 @@ class EphysInterface(object):
         plt.show()
 
 
-    def plot_array_freq_tuning(self, session, behavSuffix, replace=0, tetrodes=None, timeRange=[0, 0.1]):
+    def plot_array_freq_tuning(self, session, behavSuffix, replace=0, electrodes=None, timeRange=[0, 0.1]):
 
-        if not tetrodes:
-            tetrodes=self.defaultTetrodes
+        if not electrodes:
+            electrodes=self.defaultElectrodes
 
-        numTetrodes = len(tetrodes)
+        numElectrodes = len(electrodes)
         eventData = self.loader.get_session_events(session)
         eventOnsetTimes = self.loader.get_event_onset_times(eventData)
         plotTitle = self.loader.get_session_filename(session)
@@ -90,47 +90,47 @@ class EphysInterface(object):
             fig = plt.figure()
 
 
-        for ind , tetrode in enumerate(tetrodes):
+        for ind , electrode in enumerate(electrodes):
 
-            spikeData = self.loader.get_session_spikes(session, tetrode)
+            spikeData = self.loader.get_session_spikes(session, electrode)
 
             if ind == 0:
-                ax = fig.add_subplot(numTetrodes,1,ind+1)
+                ax = fig.add_subplot(numElectrodes,1,ind+1)
             else:
-                ax = fig.add_subplot(numTetrodes,1,ind+1, sharex = fig.axes[0], sharey = fig.axes[0])
+                ax = fig.add_subplot(numElectrodes,1,ind+1, sharex = fig.axes[0], sharey = fig.axes[0])
 
             spikeTimestamps = spikeData.timestamps
             dataplotter.one_axis_tc_or_rlf(spikeTimestamps, eventOnsetTimes, freqEachTrial, timeRange=timeRange)
 
             ax.set_xticks(range(len(freqLabels)))
 
-            if ind == numTetrodes-1:
+            if ind == numElectrodes-1:
                 ax.set_xticklabels(freqLabels, rotation='vertical')
                 plt.xlabel('Frequency (kHz)')
             else:
                 plt.setp(ax.get_xticklabels(), visible=False)
 
 
-            plt.ylabel('TT {}'.format(tetrode))
-            
+            plt.ylabel('{}'.format(electrode))
+
 
         plt.figtext(0.05, 0.5, 'Average number of spikes in range {}'.format(timeRange), rotation='vertical', va='center', ha='center')
         plt.show()
 
 
 
-    def plot_array_raster(self, session, replace=0, sortArray=[], timeRange = [-0.5, 1], tetrodes=None, ms=4):
+    def plot_array_raster(self, session, replace=0, sortArray=[], timeRange = [-0.5, 1], electrodes=None, ms=4):
         '''
-        This is the much-improved version of a function to plot a raster for each tetrode. All rasters
+        This is the much-improved version of a function to plot a raster for each electrode. All rasters
         will be plotted using standardized plotting code, and we will simply call the functions.
-        In this case, we get the event data once, and then loop through the tetrodes, getting the
-        spike data and calling the plotting code for each tetrode.
+        In this case, we get the event data once, and then loop through the electrodes, getting the
+        spike data and calling the plotting code for each electrode.
         '''
 
-        if not tetrodes:
-            tetrodes=self.defaultTetrodes
+        if not electrodes:
+            electrodes=self.defaultElectrodes
 
-        numTetrodes = len(tetrodes)
+        numElectrodes = len(electrodes)
         eventData = self.loader.get_session_events(session)
         eventOnsetTimes = self.loader.get_event_onset_times(eventData)
         plotTitle = self.loader.get_session_filename(session)
@@ -142,14 +142,14 @@ class EphysInterface(object):
             fig = plt.figure()
 
 
-        for ind , tetrode in enumerate(tetrodes):
+        for ind , electrode in enumerate(electrodes):
 
-            spikeData = self.loader.get_session_spikes(session, tetrode)
+            spikeData = self.loader.get_session_spikes(session, electrode)
 
             if ind == 0:
-                ax = fig.add_subplot(numTetrodes,1,ind+1)
+                ax = fig.add_subplot(numElectrodes,1,ind+1)
             else:
-                ax = fig.add_subplot(numTetrodes,1,ind+1, sharex = fig.axes[0], sharey = fig.axes[0])
+                ax = fig.add_subplot(numElectrodes,1,ind+1, sharex = fig.axes[0], sharey = fig.axes[0])
 
             spikeTimestamps = spikeData.timestamps
             dataplotter.plot_raster(spikeTimestamps, eventOnsetTimes, sortArray=sortArray, ms=ms, timeRange = timeRange)
@@ -157,20 +157,20 @@ class EphysInterface(object):
             if ind == 0:
                 plt.title(plotTitle)
 
-            plt.ylabel('TT {}'.format(tetrode))
+            plt.ylabel('TT {}'.format(electrode))
 
         plt.xlabel('time (sec)')
         plt.show()
 
 
 
-    def plot_sorted_tuning_raster(self, session, tetrode, behavSuffix, cluster = None, replace=0, timeRange = [-0.5, 1], ms = 1):
+    def plot_sorted_tuning_raster(self, session, electrode, behavSuffix, cluster = None, replace=0, timeRange = [-0.5, 1], ms = 1):
         '''
         '''
         bdata = self.loader.get_session_behavior(behavSuffix)
         plotTitle = self.loader.get_session_filename(session)
         eventData = self.loader.get_session_events(session)
-        spikeData = self.loader.get_session_spikes(session, tetrode)
+        spikeData = self.loader.get_session_spikes(session, electrode)
 
         eventOnsetTimes = self.loader.get_event_onset_times(eventData)
         spikeTimestamps=spikeData.timestamps
@@ -203,11 +203,11 @@ class EphysInterface(object):
 
 
     #Relies on external TC heatmap plotting functions
-    def plot_session_tc_heatmap(self, session, tetrode, behavSuffix, replace=True, timeRange=[0, 0.1]):
+    def plot_session_tc_heatmap(self, session, electrode, behavSuffix, replace=True, timeRange=[0, 0.1]):
         bdata = self.loader.get_session_behavior(behavSuffix)
         plotTitle = self.loader.get_session_filename(session)
         eventData = self.loader.get_session_events(session)
-        spikeData = self.loader.get_session_spikes(session, tetrode)
+        spikeData = self.loader.get_session_spikes(session, electrode)
 
         spikeTimestamps = spikeData.timestamps
 
@@ -253,11 +253,11 @@ class EphysInterface(object):
         pass
 
 
-    def flip_tetrode_tuning(self, session, behavSuffix, tetrodes=None , rasterRange=[-0.5, 1], tcRange=[0, 0.1]):
+    def flip_electrode_tuning(self, session, behavSuffix, electrodes=None , rasterRange=[-0.5, 1], tcRange=[0, 0.1]):
 
-        if not tetrodes:
-            tetrodes=self.defaultTetrodes
-        
+        if not electrodes:
+            electrodes=self.defaultElectrodes
+
         plotTitle = self.loader.get_session_filename(session)
 
         spikesList=[]
@@ -265,14 +265,14 @@ class EphysInterface(object):
         freqList=[]
         rasterRangeList=[]
         tcRangeList=[]
-        
+
         bdata = self.loader.get_session_behavior(behavSuffix)
         freqEachTrial = bdata['currentFreq']
         eventData = self.loader.get_session_events(session)
         eventOnsetTimes = self.loader.get_event_onset_times(eventData)
 
-        for tetrode in tetrodes:
-            spikeData = self.loader.get_session_spikes(session, tetrode)
+        for electrode in electrodes:
+            spikeData = self.loader.get_session_spikes(session, electrode)
             spikeTimestamps = spikeData.timestamps
 
             spikesList.append(spikeTimestamps)
@@ -281,21 +281,21 @@ class EphysInterface(object):
             rasterRangeList.append(rasterRange)
             tcRangeList.append(tcRange)
 
-        dataList=zip(spikesList, eventsList, freqList, tetrodes, rasterRangeList, tcRangeList)
+        dataList=zip(spikesList, eventsList, freqList, electrodes, rasterRangeList, tcRangeList)
 
-        self._tetrode_tuning(dataList)
+        self._electrode_tuning(dataList)
 
-        
-    
-    @dataplotter.FlipThroughData    
-    def _tetrode_tuning(spikeTimestamps, eventOnsetTimes, freqEachTrial, tetrode, rasterRange, tcRange): 
+
+
+    @dataplotter.FlipThroughData
+    def _electrode_tuning(spikeTimestamps, eventOnsetTimes, freqEachTrial, electrode, rasterRange, tcRange):
 
         '''
         Fix this so that
         '''
 
         #Unpack the data tuple (Watch out - make sure things from the above method are in the right order)
-        # spikeTimestamps, eventOnsetTimes, freqEachTrial, tetrode, rasterRange, tcRange = dataTuple
+        # spikeTimestamps, eventOnsetTimes, freqEachTrial, electrode, rasterRange, tcRange = dataTuple
 
         possibleFreq=np.unique(freqEachTrial)
         freqLabels = ['{0:.1f}'.format(freq/1000.0) for freq in possibleFreq]
@@ -303,7 +303,7 @@ class EphysInterface(object):
 
         ax1=plt.subplot2grid((3, 3), (0, 0), rowspan=3, colspan=2)
         dataplotter.plot_raster(spikeTimestamps, eventOnsetTimes, sortArray = freqEachTrial, ms=1, labels=freqLabels, timeRange=rasterRange)
-        plt.title("Tetrode {}".format(tetrode))
+        plt.title("Electrode {}".format(electrode))
         ax1.set_ylabel('Freq (kHz)')
         ax1.set_xlabel('Time from sound onset (sec)')
 
