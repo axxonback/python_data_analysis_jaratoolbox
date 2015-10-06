@@ -13,7 +13,7 @@ import os
 
 SAMPLING_RATE=30000.0
 
-#The length of each time window displayed after the stumulus, in seconds. 
+#The length of each time window displayed after the stumulus, in seconds.
 secondsEachTrace = 0.1
 
 
@@ -28,7 +28,7 @@ bdata = loadbehavior.BehaviorData(behavDataFileName,readmode='full')
 freqEachTrial = bdata['currentFreq']
 intensityEachTrial = bdata['currentIntensity']
 
-possibleFreq = np.unique(freqEachTrial) 
+possibleFreq = np.unique(freqEachTrial)
 possibleIntensity = np.unique(intensityEachTrial)
 
 #Get the event timestamps from openEphys
@@ -41,7 +41,7 @@ tetrodeChannels = np.array([[9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20],
 
 #Get the continuous data
 channel = 24 #The channel to plot
-reference = 9 #Experimental: plotting without subtracting a reference made all channels look the same. 
+reference = 9 #Experimental: plotting without subtracting a reference made all channels look the same.
 cont_filename = os.path.join(ephysDir, '109_CH{0}.continuous'.format(channel))
 ref_filename = os.path.join(ephysDir, '109_CH{0}.continuous'.format(reference))
 ephysData = loadopenephys.DataCont(cont_filename)
@@ -50,8 +50,8 @@ refData = loadopenephys.DataCont(ref_filename)
 #Subtract the reference channel (not sure yet if this is a good thing to include.)
 #ephysData.samples = ephysData.samples - refData.samples
 
-#The ephys data starts with a positive nonzero timestamp, corresponding to the system time somehow. 
-#We need to subtract this from all timestamp values if we want to know what sample number to get. 
+#The ephys data starts with a positive nonzero timestamp, corresponding to the system time somehow.
+#We need to subtract this from all timestamp values if we want to know what sample number to get.
 startTimestamp = ephysData.timestamps[0]
 
 #Preallocate an array in which to store the values of each mean trace
@@ -62,29 +62,29 @@ meanTraceEachSetting = np.empty((len(possibleIntensity), len(possibleFreq), seco
 for indFreq, currentFreq in enumerate(possibleFreq):
     for indIntensity, currentIntensity in enumerate(possibleIntensity):
 
-        #Determine which trials this setting was presented on. 
+        #Determine which trials this setting was presented on.
         trialsThisSetting = np.flatnonzero((freqEachTrial == currentFreq) & (intensityEachTrial == currentIntensity))
 
-        #Get the onset timestamp for each of the trials of this setting. 
+        #Get the onset timestamp for each of the trials of this setting.
         timestampsThisSetting = eventOnsetTimes[trialsThisSetting]
-        
+
         #Subtract the starting timestamp value to get the sample number
         sampleNumbersThisSetting = timestampsThisSetting - startTimestamp
 
-        #Preallocate an array to store the traces for each trial on which this setting was presented. 
+        #Preallocate an array to store the traces for each trial on which this setting was presented.
         traces = np.empty((len(sampleNumbersThisSetting), secondsEachTrace*SAMPLING_RATE))
-        
+
         #Loop through all of the trials for this setting, extracting the trace after each presentation
         for indSamp, sampNumber in enumerate(sampleNumbersThisSetting):
             trace = ephysData.samples[sampNumber:sampNumber + secondsEachTrace*SAMPLING_RATE]
             trace = trace - trace[0]
             traces[indSamp, :] = trace
-            
+
         #Take the mean of all of the samples for this setting, and store it according to the freq and intensity
         mean_trace = np.mean(traces, axis = 0)
-        meanTraceEachSetting[indIntensity, indFreq, :] = mean_trace    
-            
-#Determine the optimal ylimits based on the greatest minimum and maximum values in the traces. 
+        meanTraceEachSetting[indIntensity, indFreq, :] = mean_trace
+
+#Determine the optimal ylimits based on the greatest minimum and maximum values in the traces.
 maxVoltageAllSettings = np.max(np.max(meanTraceEachSetting, axis = 2))
 minVoltageAllSettings = np.min(np.min(meanTraceEachSetting, axis = 2))
 
@@ -109,7 +109,7 @@ def getXlabelpoints(n):
     finalArray = rawArray - partialDiffFromCenter
     return finalArray
 
-#Not sure yet if similar modification to the locations will be necessary. 
+#Not sure yet if similar modification to the locations will be necessary.
 def getYlabelpoints(n):
     rawArray = array(range(1, n+1))/float(n+1) #The positions in a perfect (0,1) world
     return rawArray
@@ -125,4 +125,3 @@ for indp, position in enumerate(intensLabelPositions):
 figtext(0.525, 0.025, "Frequency (kHz)", ha = 'center')
 figtext(0.025, 0.5, "Intensity (dB SPL)", va = 'center', rotation = 'vertical')
 show()
-

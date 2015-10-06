@@ -71,11 +71,9 @@ class DataLoader(object):
 
             return ephysSession
 
-    def get_session_events(self, session):
+    def get_session_events(self, session, convertToSeconds=True):
         '''
         Gets the event data for a session.
-        The event data is not modified. Timestamps are not converted to seconds at this point
-
         '''
 
         if self.mode=='online':
@@ -88,13 +86,14 @@ class DataLoader(object):
         eventData=loadopenephys.Events(fullEventFilename)
 
         #Convert the timestamps to seconds
-        eventData.timestamps = np.array(eventData.timestamps)/self.EPHYS_SAMPLING_RATE
+        if convertToSeconds:
+            eventData.timestamps = np.array(eventData.timestamps)/self.EPHYS_SAMPLING_RATE
 
         return eventData
 
 
     @staticmethod
-    def get_event_onset_times(eventData, eventID=1, eventChannel=0, minEventOnsetDiff=0.5):
+    def get_event_onset_times(eventData, eventID=1, eventChannel=0, diffLimit=True, minEventOnsetDiff=0.5):
         '''
         Calculate event onset times given an eventData object.
         Accepts a jaratoolbox.loadopenephys.Events object and finds the event onset times.
@@ -108,8 +107,9 @@ class DataLoader(object):
         eventOnsetTimes=eventTimes[(evID==eventID)&(evChannel==eventChannel)]
 
         #Restrict to events are seperated by more than the minimum event onset time
-        evdiff = np.r_[1.0, np.diff(eventOnsetTimes)]
-        eventOnsetTimes=eventOnsetTimes[evdiff>minEventOnsetDiff]
+        if diffLimit:
+            evdiff = np.r_[1.0, np.diff(eventOnsetTimes)]
+            eventOnsetTimes=eventOnsetTimes[evdiff>minEventOnsetDiff]
 
         return eventOnsetTimes
 
@@ -146,7 +146,7 @@ class DataLoader(object):
 
         #Convert the spike samples to mV
         spikeData.samples = spikeData.samples.astype(float)-2**15# FIXME: this is specific to OpenEphys
-        spikeData.samples = (1000.0/spikeData.gain[0,0]) * spikeData.samples
+        spikeData.samples = (1000.0/spikeData.gain[0]) * spikeData.samples
 
         #Make timestamps an empty array if it does not exist
         if not hasattr(spikeData, 'timestamps'):
@@ -158,9 +158,9 @@ class DataLoader(object):
         #If clustering has been done for the tetrode, add the clusters to the spikedata object
         if self.mode=='online':
             clustersDir = os.path.join(settings.EPHYS_PATH,'%s/%s_kk/'%(self.animalName,ephysSession)) #FIXME: Change to python 3 compatible format
-            clustersFile = os.path.join(clustersDir,'Tetrode%d.clu.1'%tetrode)
+            clustersFile = os.path.join(clustersDir,'Tetrode%d.clu.1'%int( electrode[-1] ))
         elif self.mode=='offline':
-            clustersFile = os.path.join(settings.EPHYS_PATH, '{}_kk/'.format(session), 'Tetrode{}.clu.1'.format(tetrode))
+            clustersFile = os.path.join(settings.EPHYS_PATH, '{}_kk/'.format(session), 'Tetrode{}.clu.1'.format(int( electrode[-1] )))
 
         if os.path.isfile(clustersFile):
             spikeData.set_clusters(clustersFile)
@@ -170,6 +170,23 @@ class DataLoader(object):
             spikeData.timestamps=spikeData.timestamps[spikeData.clusters==cluster]
 
         return spikeData
+
+
+    def get_session_cont(self, session, channel):
+
+        if self.mode=='online':
+            ephysSession = self.get_session_filename(session)
+            contFilename = os.path.join(self.onlineEphysPath, ephysSession, '109_CH{}.continuous'.format(channel))
+
+        elif self.mode=='offline': #The session should already be relative to the mouse
+            contFilename = os.path.join(settings.EPHYS_PATH, session, '109_CH{}.continuous'.format(channel))
+
+
+        contData=loadopenephys.DataCont(contFilename) #FIXME: Convert to mV?
+
+        return contData
+
+
 
     def get_session_behavior(self, behavFileName):
 
