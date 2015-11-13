@@ -146,7 +146,7 @@ class DataLoader(object):
 
         #Convert the spike samples to mV
         spikeData.samples = spikeData.samples.astype(float)-2**15# FIXME: this is specific to OpenEphys
-        spikeData.samples = (1000.0/spikeData.gain[0]) * spikeData.samples
+        spikeData.samples = (1000.0/np.ravel(spikeData.gain)[0]) * spikeData.samples
 
         #Make timestamps an empty array if it does not exist
         if not hasattr(spikeData, 'timestamps'):
@@ -216,7 +216,7 @@ class DataLoader(object):
         '''
         ephysFn, behavFn = clusterObj.get_data_filenames(sessionType)
 
-        spikeData = self.get_session_spikes(ephysFn, clusterObj.tetrode, clusterObj.cluster)
+        spikeData = self.get_session_spikes(ephysFn, ''.join(['Tetrode', str( clusterObj.tetrode )]), clusterObj.cluster)
         eventData = self.get_session_events(ephysFn)
 
         behavData = None
